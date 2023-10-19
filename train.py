@@ -3,7 +3,7 @@ import torch.nn as nn
 from torchvision import transforms
 from torchvision.transforms.functional import to_pil_image
 from dataloader import GaussianImageDataset
-from loss import L_TV, L_LMCV, L_DARK, L_exp
+from loss import L_TV, L_LMCV, L_DARK, L_exp, L_color
 from model import NoiSER
 from tqdm import tqdm
 import pandas as pd
@@ -25,7 +25,7 @@ log_path = './log/'
 l_tv = L_TV()
 l1loss = nn.L1Loss()
 # llmcv = L_LMCV(1)
-# ldark = L_DARK(0.5)
+# ldark = L_DARK(0)
 # lexp = L_exp()
 
 model = NoiSER().cuda()
@@ -50,10 +50,10 @@ for images in tbar:
     enhanced = model(images)
     loss_tv = l_tv(enhanced)
     loss_l1 = l1loss(enhanced,images)
-    # loss_lmcv = 0.5*llmcv((enhanced+1)/2) # range to [0,1]
+    # loss_lmcv = llmcv((enhanced+1)/2) # range to [0,1]
     # loss_dark = ldark((enhanced+1)/2) # range to [0,1]
-    # loss_exp = 10*lexp((enhanced+1)/2, 0.6)
-    loss = loss_l1 + loss_tv #+ loss_exp + loss_lmcv + loss_dark 
+    # loss_exp = lexp((enhanced+1)/2, 0.6)
+    loss = loss_l1 + loss_tv #+ loss_lmcv #+ loss_exp + loss_dark
     optimizer.zero_grad()
     loss.backward()
     optimizer.step()

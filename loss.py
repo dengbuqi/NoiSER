@@ -29,18 +29,19 @@ class L_exp(nn.Module):
         return d
 
 class L_LMCV(nn.Module): # local maximum color value loss
-    def __init__(self, LMCV_value=1, max_patch_size=20):
+    def __init__(self, LMCV_value=1, max_patch_factor=8):
         super(L_LMCV,self).__init__()
         self.LMCV_value = LMCV_value
-        self.max_patch_size = max_patch_size
+        self.max_patch_factor = max_patch_factor
 
     def forward(self,x):
+        max_patch_size = x.shape[-1]//self.max_patch_factor
         pad_x = F.pad(input = x, 
-                    pad = ((self.max_patch_size-1)//2,(self.max_patch_size)//2,(self.max_patch_size-1)//2,(self.max_patch_size)//2), 
+                    pad = ((max_patch_size-1)//2,(max_patch_size)//2,(max_patch_size-1)//2,(max_patch_size)//2), 
                     mode = 'replicate')
         
         x_LMCV = F.max_pool2d(pad_x, 
-                    kernel_size = self.max_patch_size, 
+                    kernel_size = max_patch_size, 
                     stride = 1,
                     padding = 0,
                     dilation = 1,
@@ -51,26 +52,42 @@ class L_LMCV(nn.Module): # local maximum color value loss
         x_LMCV = x_LMCV.mean()
         return torch.abs(self.LMCV_value-x_LMCV)
     
-
 class L_DARK(nn.Module): # dark channel loss
-    def __init__(self, DARK_value=1, max_patch_size=20):
+    def __init__(self, DARK_value=1, max_patch_factor=8):
         super(L_DARK,self).__init__()
         self.DARK_value = DARK_value
-        self.max_patch_size = max_patch_size
+        self.max_patch_factor = max_patch_factor
 
     def forward(self,x):
-        pad_x = F.pad(input = x, 
-                    pad = ((self.max_patch_size-1)//2,(self.max_patch_size)//2,(self.max_patch_size-1)//2,(self.max_patch_size)//2), 
-                    mode = 'replicate')
+        # max_patch_size = x.shape[-1]//self.max_patch_factor
+        # pad_x = F.pad(input = x, 
+        #             pad = ((max_patch_size-1)//2,(max_patch_size)//2,(max_patch_size-1)//2,(max_patch_size)//2), 
+        #             mode = 'replicate')
         
-        x_DARK = -F.max_pool2d(-pad_x, 
-                    kernel_size = self.max_patch_size, 
-                    stride = 1,
-                    padding = 0,
-                    dilation = 1,
-                    return_indices = False,
-                    ceil_mode = False
-                    )
-        x_DARK,_ = torch.min(x_DARK, dim=1)
+        # x_DARK = -F.max_pool2d(-pad_x, 
+        #             kernel_size = max_patch_size, 
+        #             stride = 1,
+        #             padding = 0,
+        #             dilation = 1,
+        #             return_indices = False,
+        #             ceil_mode = False
+        #             )
+        # x_DARK,_ = torch.min(x_DARK, dim=1)
+        # x_DARK = x_DARK.mean()
+        # return torch.abs(self.DARK_value-x_DARK)
+        x_DARK,_ = torch.min(x, dim=1)
         x_DARK = x_DARK.mean()
         return torch.abs(self.DARK_value-x_DARK)
+    
+class L_color(nn.Module):
+    def __init__(self):
+        super(L_color, self).__init__()
+
+    def forward(self, x ):
+        mean_rgb = torch.mean(x,[2,3],keepdim=True)
+        mr,mg, mb = torch.split(mean_rgb, 1, dim=1)
+        Drg = torch.pow(mr-mg,2)
+        Drb = torch.pow(mr-mb,2)
+        Dgb = torch.pow(mb-mg,2)
+        k = torch.pow(torch.pow(Drg,2) + torch.pow(Drb,2) + torch.pow(Dgb,2),0.5)
+        return k
