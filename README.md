@@ -7,8 +7,8 @@
 
 ## Input and output
 <p align="center">
-  <img alt="Light" src="./asserts/input.png" width="45%">
+  <img alt="Light" src="./assets/input.png" width="45%">
 &nbsp; &nbsp; &nbsp; &nbsp;
-  <img alt="Dark" src="./asserts/enhanced.png" width="45%">
+  <img alt="Dark" src="./assets/enhanced.png" width="45%">
 </p>
 
